@@ -1,12 +1,12 @@
 # app/application/championship/use_cases.py
 
 from datetime import datetime
-from app.api.championship.schemas import ChampionshipResponse, CreateChampionshipDTO, CreateChampionshipRequest, DashboardStats, OrganizerDashboardResponse
+from app.api.championship.schemas import ChampionshipResponse, CreateChampionshipDTO, CreateChampionshipRequest, DashboardStats, TeamDashboardResponse, UpdateChampionshipDTO
 from app.application.mappers import to_domain, to_schema
 from app.domain.championship.entities import Championship
 from app.domain.championship.exceptions import ChampionshipNotFoundException
 from app.domain.championship.repositories import IChampionshipRepository
-from app.domain.championship.value_objects import ChampionshipStatusEnum
+from app.domain.championship.value_objects import ChampionshipStatus, ChampionshipStatusEnum, ChampionshipType
 from app.infrastructure.file_service import ChampionshipFileService
 
 
@@ -22,7 +22,8 @@ class GetDashboardUseCase:
             status=ChampionshipStatusEnum.COMPLETED.value, user_id=self.current_user_id)
         total_count = active_count + finished_count
 
-        active = self.championship_repo.list_active(user_id=self.current_user_id)
+        active = self.championship_repo.list_active(
+            user_id=self.current_user_id)
         nexts = self.championship_repo.list_next(user_id=self.current_user_id)
 
         stats = DashboardStats(
@@ -31,10 +32,12 @@ class GetDashboardUseCase:
             total=total_count
         )
 
-        return OrganizerDashboardResponse(
+        return TeamDashboardResponse(
             stats=stats,
-            active_championships=[to_schema(ch, ChampionshipResponse) for ch in active],
-            next_championships=[to_schema(ch, ChampionshipResponse) for ch in nexts]
+            active_championships=[
+                to_schema(ch, ChampionshipResponse) for ch in active],
+            next_championships=[
+                to_schema(ch, ChampionshipResponse) for ch in nexts]
         )
 
 
@@ -50,6 +53,43 @@ class GetPaginatedChampionshipsUseCase:
 
     def to_schema(self, filtered_championships):
         return [to_schema(champ, ChampionshipResponse) for champ in filtered_championships]
+
+
+class GetPaginatedChampionshipsForUserUseCase:
+    def __init__(self, championship_repo: IChampionshipRepository):
+        self.championship_repo = championship_repo
+
+    def execute(self,
+                user_id: int,
+                status: str | None = None,
+                type: str | None = None,
+                limit: int = 100,
+                offset: int = 0,
+                ):
+        championships_with_team = self.championship_repo.list_with_user_team(
+            user_id=user_id,
+            status=status,
+            type=type,
+            limit=limit,
+            offset=offset,
+        )
+
+        return [
+            self.to_schema(championship, team)
+            for championship, team in championships_with_team
+        ]
+
+    def to_schema(self, championship, team):
+        response = to_schema(championship, ChampionshipResponse)
+
+        response.is_registered = team is not None
+        response.my_team_id = team.id if team else None
+        response.can_register = (
+            championship.status.value == ChampionshipStatusEnum.INSCRIPTIONS_OPEN.value
+            and team is None
+        )
+
+        return response
 
 
 class GetChampionshipByIdUseCase:
@@ -69,12 +109,12 @@ class CreateChampionsipUseCase:
         self.file_service = file_service
 
     async def execute(self, dto: CreateChampionshipDTO, organizer_id: int) -> Championship:
-        
+
         # 1. Crear objeto dominio
         championship = Championship(
             name=dto.name,
             location=dto.location,
-            type=dto.type,
+            type=ChampionshipType(dto.type),
             sets_to_win=dto.sets_to_win,
             points_per_set=dto.points_per_set,
             start_date=dto.start_date,
@@ -97,18 +137,48 @@ class CreateChampionsipUseCase:
 
 
 class UpdateChampionsipUseCase:
-    def __init__(self, championship_repo: IChampionshipRepository):
+    def __init__(self,
+                 championship_repo: IChampionshipRepository,
+                 file_service: ChampionshipFileService
+                 ):
         self.championship_repo = championship_repo
+        self.file_service = file_service
 
-    def execute(self, updated_championship: CreateChampionshipRequest,
-                championship_id: int, organizer_id: int) -> Championship:
-        championship = to_domain(updated_championship, Championship)
+    async def execute(self,
+                      updated_championship: UpdateChampionshipDTO,
+                      championship_id: int,
+                      organizer_id: int
+                      ) -> ChampionshipResponse:
+        existing_championship = self.championship_repo.get_by_id(
+            championship_id)
+        if not existing_championship:
+            raise ChampionshipNotFoundException('Championship not found')
 
-        championship.id = championship_id
-        championship.organizer_id = organizer_id
+        temp_logo_path = None
 
-        created_championship = self.championship_repo.update(championship)
-        return to_schema(created_championship, ChampionshipResponse)
+        try:
+            new_domain_championship = to_domain(
+                updated_championship, Championship)
+
+            # aqui iria la logica para mergear ambos Championships de domain
+            existing_championship = merge_championship(
+                existing_championship, new_domain_championship)
+
+            existing_championship.organizer_id = organizer_id
+
+            if updated_championship.logo:
+                temp_logo_path = await self.file_service.save_temp_logo(updated_championship.logo)
+                final_name = await self.file_service.commit_logo(temp_logo_path)
+                existing_championship.logo_url = f"/media/championships/{final_name}"
+
+            updated = self.championship_repo.update(existing_championship)
+
+            return to_schema(updated, ChampionshipResponse)
+
+        except Exception:
+            if temp_logo_path:
+                await self.file_service.delete_temp(temp_logo_path)
+            raise
 
 
 class DeleteChampionshipUseCase:
@@ -125,3 +195,34 @@ class DeleteChampionshipUseCase:
             return True
 
         return False
+
+
+def merge_championship(
+    existing: Championship,
+    incoming: Championship
+) -> Championship:
+
+    # ⚠️ campos que NO se deben tocar nunca
+    IMMUTABLE_FIELDS = {
+        "id",
+        "created_at",
+        "teams",
+        "organizer",
+    }
+
+    for field_name in existing.__dataclass_fields__.keys():
+        if field_name in IMMUTABLE_FIELDS:
+            continue
+
+        new_value = getattr(incoming, field_name, None)
+
+        # ⚠️ si el mapper no pudo construir el valor → ignorar
+        if new_value is None:
+            continue
+
+        setattr(existing, field_name, new_value)
+
+    # ⏱️ update automático
+    existing.updated_at = datetime.now()
+
+    return existing

@@ -5,6 +5,7 @@
 
 from app.domain.championship.entities import Championship
 from app.domain.championship.value_objects import ChampionshipName, ChampionshipStatus, ChampionshipType
+from app.domain.team.entities import Team
 from app.domain.user.entities import User
 from app.domain.user.value_objects import UserEmail, UserPassword, UserRole
 
@@ -43,6 +44,10 @@ def to_domain(obj, domain_class):
                     raw_value = ChampionshipType(raw_value)
                 elif field == "status":
                     raw_value = ChampionshipStatus(raw_value)
+                    
+            if domain_class is Team:
+                if field == 'user':
+                    raw_value = to_domain(raw_value, User)
 
             data[field] = raw_value
 
@@ -57,6 +62,8 @@ def to_model(domain_obj, model_class):
             data[field] = value.value
         else:
             if field == 'teams':
+                continue
+            if field == 'user':
                 continue
             if field == 'organizer':
                 continue

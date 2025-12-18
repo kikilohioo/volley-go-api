@@ -5,17 +5,17 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from fastapi.params import Query
 from app.api.auth.dependencies import get_current_user
 from app.api.championship.dependencies import get_repo
-from app.application.championship.use_cases import CreateChampionsipUseCase, DeleteChampionshipUseCase, GetChampionshipByIdUseCase, GetDashboardUseCase, GetPaginatedChampionshipsUseCase, UpdateChampionsipUseCase
+from app.application.championship.use_cases import CreateChampionsipUseCase, DeleteChampionshipUseCase, GetChampionshipByIdUseCase, GetDashboardUseCase, GetPaginatedChampionshipsForUserUseCase, GetPaginatedChampionshipsUseCase, UpdateChampionsipUseCase
 from app.domain.championship.value_objects import ChampionshipStatusEnum, ChampionshipTypeEnum
 from app.infrastructure.file_service import ChampionshipFileService
-from .schemas import ChampionshipResponse, CreateChampionshipDTO, CreateChampionshipRequest, OrganizerDashboardResponse, UpdateChampionshipRequest
+from .schemas import ChampionshipResponse, CreateChampionshipDTO, CreateChampionshipRequest, TeamDashboardResponse, UpdateChampionshipDTO, UpdateChampionshipRequest
 
 
 router = APIRouter(prefix='/championships', tags=['Championships'])
 
 
 @router.get('/', response_model=list[ChampionshipResponse])
-async def get_paginated_championships(type: ChampionshipTypeEnum | None = Query(None, description="Tipo de campeonato"),
+async def get_championships(type: ChampionshipTypeEnum | None = Query(None, description="Tipo de campeonato"),
                                       status: ChampionshipStatusEnum | None = Query(
                                           None, description="Estado del campeonato"),
                                       limit: int = Query(
@@ -32,8 +32,41 @@ async def get_paginated_championships(type: ChampionshipTypeEnum | None = Query(
     return championships
 
 
-@router.get('/organizer/dashboard', response_model=OrganizerDashboardResponse)
-async def get_paginated_championships(type: ChampionshipTypeEnum | None = Query(None, description="Tipo de campeonato"),
+@router.get(
+    "/me",
+    response_model=list[ChampionshipResponse],
+    summary="Obtener campeonatos con estado de inscripción del usuario"
+)
+async def get_my_championships(type: ChampionshipTypeEnum | None = Query(
+                                    None, description="Tipo de campeonato"
+                                ),
+                                status: ChampionshipStatusEnum | None = Query(
+                                    None, description="Estado del campeonato"
+                                ),
+                                limit: int = Query(
+                                    10, description="Número máximo de resultados a obtener"
+                                ),
+                                offset: int = Query(
+                                    0, description="Número de resultados a saltar para paginación"
+                                ),
+                                repo=Depends(get_repo),
+                                current_user=Depends(get_current_user),
+    ):
+    use_case = GetPaginatedChampionshipsForUserUseCase(repo)
+
+    championships = use_case.execute(
+        user_id=current_user.id,
+        status=status,
+        type=type,
+        limit=limit,
+        offset=offset,
+    )
+
+    return championships
+
+
+@router.get('/organizer/dashboard', response_model=TeamDashboardResponse)
+async def get_dashboard_championships(type: ChampionshipTypeEnum | None = Query(None, description="Tipo de campeonato"),
                                       status: ChampionshipStatusEnum | None = Query(
                                           None, description="Estado del campeonato"),
                                       limit: int = Query(
@@ -94,13 +127,54 @@ async def create_championship(
     return await use_case.execute(dto, organizer_id=current_user.id)
 
 
-@router.put('/{championship_id}', response_model=ChampionshipResponse)
-async def update_championship(championship_id: int, updated_championship: UpdateChampionshipRequest, current_user=Depends(get_current_user), repo=Depends(get_repo),):
-    use_case = UpdateChampionsipUseCase(repo)
-    championship = use_case.execute(updated_championship=updated_championship,
-                                    championship_id=championship_id, organizer_id=current_user.id)
+@router.put(
+    '/{championship_id}',
+    response_model=ChampionshipResponse
+)
+async def update_championship(
+    championship_id: int,
 
-    return championship
+    name: str = Form(...),
+    location: str = Form(...),
+    type: str = Form(...),
+    sets_to_win: int = Form(...),
+    points_per_set: int = Form(...),
+    player_cost: float = Form(...),
+    start_date: datetime = Form(...),
+    end_date: datetime = Form(...),
+    description: str = Form(...),
+    status: str | None = Form(...),
+    max_teams: int = Form(...),
+
+    logo: UploadFile | None = File(None),
+
+    repo=Depends(get_repo),
+    current_user=Depends(get_current_user),
+    file_service: ChampionshipFileService = Depends(ChampionshipFileService)
+):
+
+    dto = UpdateChampionshipDTO(
+        name=name,
+        location=location,
+        type=type,
+        sets_to_win=sets_to_win,
+        points_per_set=points_per_set,
+        start_date=start_date,
+        end_date=end_date,
+        player_cost=player_cost,
+        description=description,
+        max_teams=max_teams,
+        status=status,
+        logo=logo
+    )
+
+    use_case = UpdateChampionsipUseCase(repo, file_service)
+
+    return await use_case.execute(
+        updated_championship=dto,
+        championship_id=championship_id,
+        organizer_id=current_user.id
+    )
 
 
 @router.delete('/{championship_id}', status_code=status.HTTP_204_NO_CONTENT)

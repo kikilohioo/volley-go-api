@@ -30,7 +30,7 @@ class ChampionshipDates:
 class ChampionshipTypeEnum(str, Enum):
     ROUND_ROBIN = 'round_robin'  # Todos contra todos, luego semis de los 4 mejores
     GROUPS_THEN_SEMIS = 'groups_then_semis' # Clasificación por grupos, luego semis
-    GROUPS_THEN_QUARTERS = 'groups_then_semis' # Clasificación por grupos, luego cuartos, semis, final
+    GROUPS_THEN_QUARTERS = 'groups_then_quarters' # Clasificación por grupos, luego cuartos, semis, final
     KNOCKOUT = 'knockout'  # Eliminación directa, como 4tos, semis, final
 
 
@@ -40,7 +40,7 @@ class ChampionshipType:
 
     def __post_init__(self):
         if self.value not in ChampionshipTypeEnum._value2member_map_:
-            raise InvalidChampionshipStatusException("Type must be either 'round_robin', 'organizer', 'groups_then_semis', 'groups_then_quarters' or 'knockout'")
+            raise InvalidChampionshipStatusException("Type must be either 'round_robin', 'groups_then_semis', 'groups_then_quarters' or 'knockout'")
 
 
 class ChampionshipStatusEnum(str, Enum):

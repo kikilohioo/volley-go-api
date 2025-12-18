@@ -1,6 +1,7 @@
 # app/infrastructure/user/sqlalchemy_user_model.py
 
 from sqlalchemy import Boolean, Column, Integer, String, DateTime
+from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.infrastructure.database import Base
 

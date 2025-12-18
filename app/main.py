@@ -9,8 +9,16 @@ from app.api.routes import router as main_router
 from app.api.user.routes import router as user_router
 from app.api.auth.routes import router as auth_router
 from app.api.championship.routes import router as championship_router
+from app.api.team.routes import router as team_router
+from app.api.player.routes import router as player_router
 
 # Import exception handlers and exceptions
+from app.domain.player.exceptions import PlayerDomainException
+from app.api.player.exception_handlers import player_exception_handler
+
+from app.domain.team.exceptions import TeamDomainException
+from app.api.team.exception_handlers import team_exception_handler
+
 from app.domain.user.exceptions import UserDomainException
 from app.api.user.exception_handlers import user_exception_handler
 
@@ -37,14 +45,17 @@ app.add_middleware(
 # Register exception handlers
 app.add_exception_handler(UserDomainException, user_exception_handler)
 app.add_exception_handler(UserDomainException, auth_exception_handler)
-app.add_exception_handler(ChampionshipDomainException,
-                          championship_exception_handler)
+app.add_exception_handler(ChampionshipDomainException, championship_exception_handler)
+app.add_exception_handler(TeamDomainException, team_exception_handler)
+app.add_exception_handler(PlayerDomainException, player_exception_handler)
 
 # Include routers
 app.include_router(main_router)
-app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(user_router)
 app.include_router(championship_router)
+app.include_router(team_router)
+app.include_router(player_router)
 
 app.mount(
     "/media/avatars",
@@ -56,4 +67,10 @@ app.mount(
     "/media/championships",
     StaticFiles(directory="app/infrastructure/storage/championships"),
     name="championships"
+)
+
+app.mount(
+    "/media/teams",
+    StaticFiles(directory="app/infrastructure/storage/teams"),
+    name="teams"
 )

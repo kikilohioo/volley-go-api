@@ -6,9 +6,12 @@ from app.domain.championship.entities import Championship
 from app.domain.championship.repositories import IChampionshipRepository
 from app.domain.championship.entities import Championship
 from app.domain.championship.value_objects import ChampionshipStatusEnum
+from app.domain.team.entities import Team
+from app.infrastructure.player.sqlalchemy_player_model import PlayerModel
+from app.infrastructure.team.sqlalchemy_team_model import TeamModel
 from .sqlalchemy_championship_model import ChampionshipModel
 from app.infrastructure.mappers import to_domain, to_model
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 
 
 class SQLAlchemyChampionshipRepository(IChampionshipRepository):
@@ -82,9 +85,19 @@ class SQLAlchemyChampionshipRepository(IChampionshipRepository):
                   limit: int = 100,
                   offset: int = 0,
                   ) -> List[Championship]:
-        query = select(ChampionshipModel) \
-            .where(ChampionshipModel.organizer_id == user_id) \
-            .where(ChampionshipModel.status == ChampionshipStatusEnum.UPCOMING.value)
+        query = (
+            select(ChampionshipModel)
+            .where(ChampionshipModel.organizer_id == user_id)
+            .where(
+                ChampionshipModel.status.in_([
+                    ChampionshipStatusEnum.UPCOMING.value,
+                    ChampionshipStatusEnum.INSCRIPTIONS_OPEN.value,
+                    ChampionshipStatusEnum.INSCRIPTIONS_CLOSED.value
+                ])
+            )
+            .limit(limit)
+            .offset(offset)
+        )
 
         query = query.limit(limit).offset(offset)
 
@@ -98,3 +111,46 @@ class SQLAlchemyChampionshipRepository(IChampionshipRepository):
         ).where(ChampionshipModel.organizer_id == user_id)
 
         return self.session.execute(query).scalar()
+
+    def list_with_user_team(self,
+                            user_id: int,
+                            status: str | None = None,
+                            type: str | None = None,
+                            limit: int = 100,
+                            offset: int = 0,
+                            ) -> list[tuple[Championship, Team | None]]:
+
+        stmt = (select(ChampionshipModel, TeamModel)
+                .outerjoin(
+                TeamModel,
+                TeamModel.championship_id == ChampionshipModel.id,
+                )
+                .outerjoin(
+                PlayerModel,
+                and_(
+                    PlayerModel.team_id == TeamModel.id,
+                    PlayerModel.user_id == user_id,
+                ),
+                )
+                )
+
+        if status:
+            stmt = stmt.where(ChampionshipModel.status == status)
+
+        if type:
+            stmt = stmt.where(ChampionshipModel.type == type)
+
+        stmt = stmt.limit(limit).offset(offset)
+
+        result = self.session.execute(stmt).all()
+
+        return [
+            (
+                to_domain(championship_model, Championship),
+                to_domain(team_model, Team) if player_model else None,
+            )
+            for championship_model, team_model, player_model in
+            self.session.execute(
+                stmt.add_columns(PlayerModel)
+            ).all()
+        ]

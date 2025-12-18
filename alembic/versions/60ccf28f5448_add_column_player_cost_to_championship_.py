@@ -29,8 +29,10 @@ def upgrade() -> None:
             server_default="0"
         )
     )
+    pass
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     op.drop_column("championships", "player_cost")
+    pass

@@ -22,6 +22,9 @@ class ChampionshipResponse(BaseModel):
     player_cost: float
     description: Optional[str]
     logo_url: Optional[str]
+    my_team_id: Optional[int] = None
+    is_registered: bool = False
+    can_register: bool = False
     max_teams: int
     status: str
 
@@ -54,12 +57,27 @@ class UpdateChampionshipRequest(BaseModel):
     max_teams: int
 
 
-class OrganizerDashboardResponse(BaseModel):
+class UpdateChampionshipDTO(BaseModel):
+    name: str
+    location: str
+    type: str
+    sets_to_win: int
+    points_per_set: int
+    start_date: datetime
+    end_date: datetime
+    player_cost: float
+    max_teams: int
+    description: Optional[str] = None
+    status: Optional[str] = None
+
+    logo: UploadFile | None = None
+
+
+class TeamDashboardResponse(BaseModel):
     stats: DashboardStats
     active_championships: List[ChampionshipResponse]
     next_championships: List[ChampionshipResponse]
-        
-        
+
 
 class DashboardStats(BaseModel):
     active: int
@@ -78,5 +96,5 @@ class CreateChampionshipDTO(BaseModel):
     player_cost: float
     description: str
     max_teams: int
-    
+
     logo: UploadFile | None = None

@@ -1,7 +1,9 @@
 # app/domain/championship/repositories.py
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
+
+from app.domain.team.entities import Team
 from .entities import Championship
 
 
@@ -43,4 +45,14 @@ class IChampionshipRepository(ABC):
 
     @abstractmethod
     def count_by_status(self, status: str, user_id: int) -> int:
+        pass
+
+    @abstractmethod
+    def list_with_user_team(self,
+                            user_id: int,
+                            status: str | None = None,
+                            type: str | None = None,
+                            limit: int = 100,
+                            offset: int = 0,
+                            ) -> List[Tuple[Championship, Team | None]]:
         pass
