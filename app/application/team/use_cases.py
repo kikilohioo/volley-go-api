@@ -37,7 +37,7 @@ class GetTeamByIdUseCase:
     def execute(self, team_id: int):
         team = self.team_repo.get_by_id(team_id)
         if not team:
-            raise TeamNotFoundException("Team not found")
+            raise TeamNotFoundException("Equipo no encontrado")
 
         return to_schema(team, TeamResponse)
 
@@ -105,11 +105,11 @@ class UpdateTeamUseCase:
 
         team = self.team_repo.get_by_id(team_id)
         if not team:
-            raise TeamNotFoundException("Team not found")
+            raise TeamNotFoundException("Equipo no encontrado")
 
         # 🔐 ownership (opcional pero recomendado)
         if team.user_id != user_id:
-            raise TeamNotFoundException("Team not found")
+            raise TeamNotFoundException("Equipo no encontrado")
 
         # 📝 actualizar campos
         team.name = dto.name
@@ -133,7 +133,7 @@ class DeleteTeamUseCase:
     def execute(self, team_id: int):
         team = self.team_repo.get_by_id(team_id)
         if not team:
-            raise TeamNotFoundException("Team not found")
+            raise TeamNotFoundException("Equipo no encontrado")
 
         self.team_repo.delete(team_id)
         return True
@@ -146,7 +146,7 @@ class TeamDashboardUseCase:
     def execute(self, team_id: int):
         team = self.team_repo.get_by_id(team_id)
         if not team:
-            raise TeamNotFoundException("Team not found")
+            raise TeamNotFoundException("Equipo no encontrado")
 
         return TeamDashboardResponse(
             stats=team.stats

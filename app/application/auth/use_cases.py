@@ -21,10 +21,10 @@ class LoginUserUseCase:
     def execute(self, email: str, password: str):
         user = self.repo.get_by_email(email)
         if not user:
-            raise InvalidCredentialsException('Invalid credentials')
+            raise InvalidCredentialsException('Credenciales invalidas porfavor verifique')
 
         if not self.password_service.verify(password, user.password.value):
-            raise InvalidCredentialsException('Invalid credentials')
+            raise InvalidCredentialsException('Credenciales invalidas porfavor verifique')
 
         token = JWTService.create_access_token({'user_id': user.id})
         return {'access_token': token, 'user': to_schema(user, UserResponse)}
@@ -39,7 +39,7 @@ class RegisterUserUseCase:
     async def execute(self, new_user: RegisterUserDTO) -> User:
         exist_user = self.user_repo.get_by_email(new_user.email)
         if exist_user is not None:
-            raise UserAlreadyExistsException("User with that email already exists")
+            raise UserAlreadyExistsException("Ya existe un usuario registrado con este email")
 
         hashed_password = self.password_service.hash(new_user.password)
 

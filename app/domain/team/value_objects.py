@@ -12,7 +12,7 @@ class TeamName:
     def __post_init__(self):
         if not self.value or len(self.value.strip()) < 3:
             raise InvalidTeamNameException(
-                "Team name must be at least 3 characters long"
+                "El nombre del equipo debe tener al menos 3 caracteres"
             )
             
 class TeamStats:
@@ -26,5 +26,5 @@ class TeamStats:
         for field_name, value in vars(self).items():
             if value < 0:
                 raise InvalidTeamStatsException(
-                    f"{field_name} cannot be negative"
+                    f"{field_name} no puede ser negativo"
                 )

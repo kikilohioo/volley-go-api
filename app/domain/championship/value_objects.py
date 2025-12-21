@@ -14,7 +14,7 @@ class ChampionshipName:
     def __post_init__(self):
         if not self.value or len(self.value) < 3:
             raise ValueError(
-                "Championship name must be at least 3 characters long")
+                "El nombre del campeonato tiene que tener al menos 3 caracteres")
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,7 @@ class ChampionshipDates:
 
     def __post_init__(self):
         if self.end_date <= self.start_date:
-            raise ValueError("End date must be after start date")
+            raise ValueError("Fecha y hora de finalizacion debe ser posterior a fecha y hora de inicio")
 
 
 class ChampionshipTypeEnum(str, Enum):
@@ -40,7 +40,7 @@ class ChampionshipType:
 
     def __post_init__(self):
         if self.value not in ChampionshipTypeEnum._value2member_map_:
-            raise InvalidChampionshipStatusException("Type must be either 'round_robin', 'groups_then_semis', 'groups_then_quarters' or 'knockout'")
+            raise InvalidChampionshipStatusException("Tipo de campeonato incorrecto")
 
 
 class ChampionshipStatusEnum(str, Enum):
@@ -57,4 +57,4 @@ class ChampionshipStatus:
 
     def __post_init__(self):
         if self.value not in ChampionshipStatusEnum._value2member_map_:
-            raise InvalidChampionshipStatusException("Status must be either 'inscriptions_open', 'inscriptions_closed', 'ongoing' or 'completed'")
+            raise InvalidChampionshipStatusException("Estado de campeonato incorrecto")

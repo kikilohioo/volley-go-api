@@ -29,7 +29,7 @@ class UserFileService:
         Mueve el archivo temporal al nombre final definitivo y devuelve solo el nombre del archivo.
         """
         if not os.path.exists(temp_path):
-            raise FileNotFoundError("Temporary file does not exist")
+            raise FileNotFoundError("Archivo temporal no existe")
 
         ext = os.path.splitext(temp_path)[1]
         final_filename = f"{uuid4()}{ext}"
@@ -75,7 +75,7 @@ class ChampionshipFileService:
         Mueve el archivo temporal a su ubicación final y devuelve el nombre del archivo.
         """
         if not os.path.exists(temp_path):
-            raise FileNotFoundError("Temporary file does not exist")
+            raise FileNotFoundError("Archivo temporal no existe")
 
         ext = os.path.splitext(temp_path)[1]
         final_filename = f"{uuid4()}{ext}"
@@ -121,7 +121,7 @@ class TeamFileService:
         Mueve el archivo temporal a su ubicación final y devuelve el nombre del archivo.
         """
         if not os.path.exists(temp_path):
-            raise FileNotFoundError("Temporary file does not exist")
+            raise FileNotFoundError("Archivo temporal no existe")
 
         ext = os.path.splitext(temp_path)[1]
         final_filename = f"{uuid4()}{ext}"

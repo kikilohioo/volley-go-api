@@ -36,9 +36,9 @@ class Championship:
     def add_team(self, team_id: int):
         if team_id in self.teams:
             raise DuplicateParticipantException(
-                f"Team {team_id} is already registered")
+                f"Equipo {team_id} ya esta registrado")
         if len(self.teams) >= self.max_teams:
             raise MaxParticipantsException(
-                f"Max teams ({self.max_teams}) reached")
+                f"Maximo de equipos ({self.max_teams}) alcanzado")
         self.teams.append(team_id)
         self.updated_at = datetime.now()

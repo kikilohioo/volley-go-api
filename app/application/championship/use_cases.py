@@ -99,7 +99,7 @@ class GetChampionshipByIdUseCase:
     def execute(self, championship_id: int):
         championship = self.championship_repo.get_by_id(championship_id)
         if not championship:
-            raise ChampionshipNotFoundException('Championship not found')
+            raise ChampionshipNotFoundException('Campeonato no encontrado')
         return to_schema(championship, ChampionshipResponse)
 
 
@@ -152,7 +152,7 @@ class UpdateChampionsipUseCase:
         existing_championship = self.championship_repo.get_by_id(
             championship_id)
         if not existing_championship:
-            raise ChampionshipNotFoundException('Championship not found')
+            raise ChampionshipNotFoundException('Campeonato no encontrado')
 
         temp_logo_path = None
 
@@ -188,7 +188,7 @@ class DeleteChampionshipUseCase:
     def execute(self, championship_id: int):
         championship = self.championship_repo.get_by_id(championship_id)
         if not championship:
-            raise ChampionshipNotFoundException('Championship not found')
+            raise ChampionshipNotFoundException('Campeonato no encontrado')
 
         result = self.championship_repo.delete(championship_id)
         if not result:

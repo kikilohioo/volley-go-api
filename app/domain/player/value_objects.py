@@ -23,7 +23,7 @@ class PlayerPosition:
 
     def __post_init__(self):
         if self.value not in PlayerPositionEnum._value2member_map_:
-            raise InvalidPlayerPositionException("Player position must be either 'setter', 'outside_hitter', 'middle_blocker', 'opposite_spiker', 'libero'")
+            raise InvalidPlayerPositionException("Posicion de jugador incorrecta")
 
 
 @dataclass(frozen=True)
@@ -33,5 +33,5 @@ class JerseyNumber:
     def __post_init__(self):
         if self.value <= 0 or self.value > 99:
             raise InvalidJerseyNumberException(
-                "Jersey number must be between 1 and 99"
+                "El numero de la camiseta tiene que ser entre 1 y 99"
             )

@@ -59,5 +59,5 @@ class Team:
     def _validate_sets(self, won: int, lost: int):
         if won < 0 or lost < 0:
             raise InvalidTeamStatsException(
-                "Sets won/lost cannot be negative"
+                "Sets ganados/perdidos no pueden ser negativos"
             )

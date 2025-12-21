@@ -12,7 +12,7 @@ class UserEmail:
 
     def __post_init__(self):
         if not re.match(r'[^@]+@[^@]+\.[^@]+', self.value):
-            raise InvalidCredentialsException('Invalid email format')
+            raise InvalidCredentialsException('Formato de correo electronico invalido')
 
 
 @dataclass(frozen=True)
@@ -22,7 +22,7 @@ class UserPassword:
     def __post_init__(self):
         if len(self.value) < 8:
             raise InvalidCredentialsException(
-                'Password must be at least 8 characters long')
+                'La contraseña debe tener al menos 8 caracteres de largo')
 
 
 class UserRoleTypeEnum(str, Enum):
@@ -37,7 +37,7 @@ class UserRole:
     def __post_init__(self):
         if self.value not in UserRoleTypeEnum._value2member_map_:
             raise InvalidUserRoleException(
-                "Role must be either 'player' or 'organizer'")
+                "El rol solo puede ser Jugador u Organizador")
 
     def __str__(self):
         return self.value

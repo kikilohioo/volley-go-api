@@ -24,7 +24,7 @@ class GetPlayerByIdUseCase:
     def execute(self, player_id: int):
         player = self.player_repo.get_by_id(player_id)
         if not player:
-            raise TeamNotFoundException("Player not found")
+            raise TeamNotFoundException("Jugador no encontrado")
 
         return to_schema(player, PlayerResponse)
 
@@ -36,7 +36,7 @@ class LeaveTeamUseCase:
     def execute(self, player_id: int, user_id: int):
         player = self.player_repo.get_by_id(player_id)
         if not player or player.user_id != user_id:
-            raise TeamNotFoundException("Player not found")
+            raise TeamNotFoundException("Jugador no encontrado")
 
         self.player_repo.delete(player_id)
         return True
@@ -63,7 +63,7 @@ class JoinTeamByCodeUseCase:
             raise TeamNotFoundException("Codigo de equipo invalido")
 
         if self.player_repo.exists(user_id=user_id, team_id=team.id):
-            raise PlayerAlreadyExistsException("User already in this team")
+            raise PlayerAlreadyExistsException("Ya estas registrado en este equipo")
 
         player = Player(
             user_id=user_id,

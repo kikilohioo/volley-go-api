@@ -18,7 +18,7 @@ class GetCurrentUserUseCase:
     def execute(self, user_id: int):
         user = self.user_repo.get_by_id(user_id)
         if not user:
-            raise UserNotFoundException('User not found')
+            raise UserNotFoundException('Usuario no encontrado')
         return to_schema(user, UserResponse)
 
 
@@ -36,7 +36,7 @@ class UpdateCurrentUserUseCase:
         if updated_user.email and updated_user.email != current_user.email.value:
             exist_user = self.user_repo.get_by_email(updated_user.email)
             if exist_user:
-                raise UserAlreadyExistsException("User with that email already exists")
+                raise UserAlreadyExistsException("Ya existe un usuario con este email")
             working_copy.email = updated_user.email
 
         # 3. Procesar contraseña si viene
@@ -72,7 +72,7 @@ class UpdateCurrentUserUseCase:
         # 6. Persistir cambios
         updated = self.user_repo.update(working_copy)
         if not updated:
-            raise UserNotFoundException("User not found")
+            raise UserNotFoundException("Usuario no encontrado")
 
         return to_schema(updated, UserResponse)
 
@@ -85,7 +85,7 @@ class GetUserByIdUseCase:
         user = self.user_repo.get_by_id(user_id)
 
         if not user:
-            raise UserNotFoundException('User not found')
+            raise UserNotFoundException('Usuario no encontrado')
 
         return to_schema(user, UserResponse)
 
@@ -97,7 +97,7 @@ class DeleteUserUseCase:
     def execute(self, user_id: int):
         user = self.user_repo.get_by_id(user_id)
         if not user:
-            raise UserNotFoundException('User not found')
+            raise UserNotFoundException('Usuario no encontrado')
 
         result = self.user_repo.delete(user_id)
         if not result:
