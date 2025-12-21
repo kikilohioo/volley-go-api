@@ -2,6 +2,7 @@
 
 import secrets
 import string
+from app.api.player.schemas import JoinTeamRequest
 from app.api.team.schemas import (
     TeamDashboardResponse,
     TeamResponse,
@@ -12,6 +13,8 @@ from app.api.team.schemas import (
     UpdateTeamDTO,
 )
 from app.application.mappers import to_domain, to_schema
+from app.domain.player.entities import Player
+from app.domain.player.repositories import IPlayerRepository
 from app.domain.team.entities import Team
 from app.domain.team.exceptions import TeamNotFoundException
 from app.domain.team.repositories import ITeamRepository
@@ -43,12 +46,14 @@ class CreateTeamUseCase:
     def __init__(
         self,
         team_repo: ITeamRepository,
+        player_repo: IPlayerRepository,
         file_service: TeamFileService,
     ):
         self.team_repo = team_repo
+        self.player_repo = player_repo
         self.file_service = file_service
 
-    async def execute(self, dto: CreateTeamDTO, user_id: int):
+    async def execute(self, dto: CreateTeamDTO, new_player: JoinTeamRequest, user_id: int):
         # 1. Crear entidad de dominio
         team = Team(
             name=dto.name,
@@ -65,9 +70,19 @@ class CreateTeamUseCase:
 
         # 3. Persistir
         created = self.team_repo.create(team)
+        
+        player = Player(
+            user_id=user_id,
+            team_id=created.id,
+            position=new_player.position,
+            jersey_number=new_player.jersey_number
+        )
+        
+        self.player_repo.create(player)
+        
         return to_schema(created, TeamResponse)
         
-    def generate_team_code(length: int = 6) -> str:
+    def generate_team_code(self, length: int = 6) -> str:
         alphabet = string.ascii_uppercase + string.digits
         return ''.join(secrets.choice(alphabet) for _ in range(length))
 

@@ -60,7 +60,7 @@ class JoinTeamByCodeUseCase:
     ):
         team = self.team_repo.get_by_join_code(join_code)
         if not team:
-            raise TeamNotFoundException("Invalid team code")
+            raise TeamNotFoundException("Codigo de equipo invalido")
 
         if self.player_repo.exists(user_id=user_id, team_id=team.id):
             raise PlayerAlreadyExistsException("User already in this team")

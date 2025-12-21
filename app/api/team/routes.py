@@ -1,9 +1,11 @@
 # app/api/auth/routes.py
 
+import json
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, Query, status
 
 from app.api.auth.dependencies import get_current_user
-from app.api.team.dependencies import get_repo
+from app.api.player.schemas import JoinTeamRequest
+from app.api.team.dependencies import get_player_repo, get_repo
 from app.api.team.schemas import (
     TeamResponse,
     CreateTeamDTO,
@@ -61,20 +63,24 @@ async def get_team_by_id(team_id: int,
 async def create_team(request: Request,
                       name: str = Form(...),
                       championship_id: int = Form(...),
+                      player: str = Form(...),
                       logo: UploadFile | None = File(None),
                       repo=Depends(get_repo),
+                      player_repo=Depends(get_player_repo),
                       current_user=Depends(get_current_user),
                       file_service: TeamFileService = Depends(TeamFileService),
                       ):
-    print(request.headers.get("authorization"))
     dto = CreateTeamDTO(
         name=name,
         championship_id=championship_id,
         logo=logo,
     )
+    
+    player_dict = json.loads(player)
+    player_dto = JoinTeamRequest(**player_dict)
 
-    use_case = CreateTeamUseCase(repo, file_service)
-    new_team = await use_case.execute(dto, user_id=current_user.id)
+    use_case = CreateTeamUseCase(repo, player_repo, file_service)
+    new_team = await use_case.execute(dto=dto, user_id=current_user.id, new_player=player_dto)
     return new_team
 
 
